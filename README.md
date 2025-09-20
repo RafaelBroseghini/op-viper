@@ -21,6 +21,11 @@ import (
     "github.com/rafaelbroseghini/op-viper/pkg/onepassword"
 )
 
+type Config struct {
+    DatabaseURL string `mapstructure:"database_url"`
+    APIKey      string `mapstructure:"api_key"`
+}
+
 func main() {
     v := viper.New()
     v.SetConfigType("yaml")
@@ -29,19 +34,16 @@ func main() {
     
     v.ReadInConfig()
     
-    var config YourConfig
-    ctx := context.Background()
-    
-    // Using CLI client
-    cliClient := &onepassword.OnePasswordCLIClient{}
-    v.Unmarshal(&config, viper.DecoderConfigOption(onepassword.OnePasswordHookFunc(ctx, cliClient)))
+    var config Config
+    l := onepassword.NewDefaultLoader()
+    v.Unmarshal(&config, viper.DecodeHook(l.OnePasswordHookFunc(context.Background())))
 }
 ```
 
-### Using 1Password SDK Client
+### Using Custom Loader Options
 
 ```go
-// Initialize SDK client with service account
+// Using SDK client with custom loader
 ctx := context.Background()
 sdkClient := onepassword.NewOnePasswordSDKClient(
     ctx,
@@ -50,7 +52,13 @@ sdkClient := onepassword.NewOnePasswordSDKClient(
     "your-service-account-token",
 )
 
-v.Unmarshal(&config, viper.DecoderConfigOption(onepassword.OnePasswordHookFunc(ctx, sdkClient)))
+loader := onepassword.NewLoader(
+    onepassword.WithSDKClient(sdkClient),
+    onepassword.WithPrefix("${"),  // Custom prefix
+    onepassword.WithSuffix("}"),   // Custom suffix
+)
+
+v.Unmarshal(&config, viper.DecodeHook(loader.OnePasswordHookFunc(ctx)))
 ```
 
 ### Configuration File Format
@@ -70,7 +78,7 @@ api:
 ```
 
 The library will automatically:
-1. Detect strings wrapped in `{{ }}`
+1. Detect strings wrapped in `{{ }}` (or custom prefix/suffix)
 2. Extract the 1Password reference (must start with `op://`)
 3. Resolve the secret using your configured client
 4. Replace the placeholder with the actual secret value
