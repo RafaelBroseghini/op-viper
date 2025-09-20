@@ -1,4 +1,4 @@
-# OP-Viper
+# op-viper
 
 A Go library that integrates 1Password with Viper configuration management, allowing you to securely inject secrets from 1Password into your application configuration.
 
