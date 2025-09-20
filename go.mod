@@ -1,6 +1,6 @@
 module github.com/rafaelbroseghini/op-viper
 
-go 1.23.4
+go 1.25.1
 
 require (
 	github.com/1password/onepassword-sdk-go v0.3.1
